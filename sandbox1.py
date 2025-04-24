@@ -9,6 +9,90 @@ pp = pprint.PrettyPrinter(indent=4)
 ### Probably best to just assume a max of N-1 trains in either direction at once
 
 
+
+
+
+
+## Prepare some scenario data:
+colors = {
+	"n":"blue",
+	"s":"red",
+}
+markers = {
+	"n":"o",
+	"s":"s",
+}
+trackLength = 200
+sidingMiles = [25,50,75,100,125,150,175]
+sidings = {}
+for sm in sidingMiles:
+    sidings[sm] = { "mile":sm, "train":False }
+segments = {}
+for i in sidingMiles:
+    s = str(i-25)+"-"+str(i)
+    segments[s] = { "min":i-25, "max":i, "trains":{"n":{}, "s":{} } }
+s = str(sidingMiles[len(sidingMiles)-1])+"-"+str(trackLength)
+segments[s] = { "min":sidingMiles[len(sidingMiles)-1], "max":trackLength, "trains":{"n":{}, "s":{} } }
+
+mph = 30
+totalMinutes = 15 # 48*60
+nTrainsPerDirection = 3
+dispatchInterval = totalMinutes/nTrainsPerDirection
+minutesPerMile = 60/mph
+milesPerMinute = mph/60
+dispatches = []
+d = 0
+while(d<totalMinutes):
+    dispatches.append(int(d))
+    d += dispatchInterval
+
+
+
+trains = {"s":{}, "n":{}}
+for i in range(0,nTrainsPerDirection):
+    trains["s"]["s"+str(i+1)] = {
+        "direction":"s",
+        "dispatch":dispatches[i],
+        "mph":mph,
+        "position":trackLength,
+        "dispatched":False,
+        "nextCollision":False,
+        "waiting":0,
+    }
+    trains["n"]["n"+str(i+1)] = {
+        "direction":"n",
+        "dispatch":dispatches[i],
+        "mph":mph,
+        "position":0,
+        "dispatched":False,
+        "nextCollision":False,
+        "waiting":0,
+    }
+
+
+
+
+
+
+def determineTrainSegment(train):
+    if (train["moving"]):
+        for s, segment in segments.items():
+            if (train["direction"]=="n"):
+                if (segment["min"] < train["position"] <= segment["max"]):
+                    return segment
+            if (train["direction"]=="s"):
+                if (segment["min"] <= train["position"] < segment["max"]):
+                    return segment
+    return False
+
+def determineTrainSiding(train):
+    if (train["moving"]):
+        for s, siding in sidings.items():
+            if (siding["mile"] == train["position"]):
+                return siding
+    return False
+
+
 ## Determine meeting point and closest siding:
 def find_meeting_point(train1, train2, sidings):
     # Extract values
@@ -41,110 +125,63 @@ def find_meeting_point(train1, train2, sidings):
     }
 
 
+
+
+
+
+
+
 """
-train_a = {"position": 40, "direction": "N", "mph": 30}
-train_b = {"position": 70, "direction": "S", "mph": 30}
-sidings = [25,50,75,100,125,150,175]
-result = find_meeting_point(train_a, train_b, sidings)
-pp.pprint(result)
-train_a = {"position": 30, "direction": "N", "mph": 30}
-train_b = {"position": 45, "direction": "S", "mph": 30}
-sidings = [25,50,75,100,125,150,175]
-result = find_meeting_point(train_a, train_b, sidings)
-pp.pprint(result)
-"""
+pp.pprint(segments)
+pp.pprint(sidings)
 
-
-
-
-## Prepare some scenario data:
-colors = {
-	"n":"blue",
-	"s":"red",
-}
-markers = {
-	"n":"o",
-	"s":"s",
-}
-trackLength = 200
-sidings = [25,50,75,100,125,150,175]
-segments = {}
-for siding in sidings:
-    s = str(siding)
-    segments["ns"+s] = []
-
-mph = 30
-totalMinutes = 48*60
-nTrainsPerDirection = 1
-dispatchInterval = totalMinutes/nTrainsPerDirection
-minutesPerMile = 60/mph
-milesPerMinute = mph/60
-dispatches = []
-d = 0
-while(d<totalMinutes):
-    dispatches.append(d)
-    d += dispatchInterval
-#print("DISPATCHES:")
-#pp.pprint(dispatches)
-#print()
-
-
-
-trains = {"s":{}, "n":{}}
-for i in range(0,nTrainsPerDirection):
-    trains["s"]["s"+str(i+1)] = {
-        "direction":"s",
-        "dispatch":dispatches[i],
-        "mph":mph,
-        "position":trackLength,
-        "dispatched":False,
-        
-    }
-    trains["n"]["n"+str(i+1)] = {
-        "direction":"n",
-        "dispatch":dispatches[i],
-        "mph":mph,
-        "position":0,
-        "dispatched":False,
-    }
-#print("TRAINS:")
-#pp.pprint(trains)
-#print()
-
-
-
-
-
-trains["n"]["n1"]["position"] = 67
-trains["s"]["s1"]["position"] = 165
-def determineTrainSegment(train):
-    if (train["direction"]=="n"):
-        for siding in sidings:
-            if (train["position"]<siding):
-                return "n"+str(siding)
-        return False
-    if (train["direction"]=="s"):
-        for siding in sidings:
-            if (train["position"]<siding):
-                return "s"+str(siding)
-        return False
-
+trains["n"]["n1"]["position"] = 57
+trains["n"]["n2"]["position"] = 25
+trains["s"]["s1"]["position"] = 135
+trains["s"]["s2"]["position"] = 175
+trains["n"]["n1"]["moving"] = True
+trains["n"]["n2"]["moving"] = True
+trains["s"]["s1"]["moving"] = True
+trains["s"]["s2"]["moving"] = True
 print(trains["n"]["n1"]["position"], determineTrainSegment(trains["n"]["n1"]))
+print(trains["n"]["n2"]["position"], determineTrainSegment(trains["n"]["n2"]))
 print(trains["s"]["s1"]["position"], determineTrainSegment(trains["s"]["s1"]))
+print(trains["s"]["s2"]["position"], determineTrainSegment(trains["s"]["s2"]))
+print(trains["n"]["n1"]["position"], determineTrainSiding(trains["n"]["n1"]))
+print(trains["n"]["n2"]["position"], determineTrainSiding(trains["n"]["n2"]))
+print(trains["s"]["s1"]["position"], determineTrainSiding(trains["s"]["s1"]))
+print(trains["s"]["s2"]["position"], determineTrainSiding(trains["s"]["s2"]))
+"""
 
 
 
 
+def dispatchTrains(minute):
+    if (len(dispatches)>0):
+        d = dispatches[0]
+        if (minute >= d):
+            for direction in trains:
+                for t, train in trains[direction].items():
+                    print(minute, d, train["dispatch"])
+                    if (train["dispatch"] <= minute):
+                        trains[direction][t]["dispatched"] = True
+            del dispatches[0]
+            return d
+    return False
 
 
-
-
-
-
-
+## LOOP BY MINUTE:
+for minute in range(totalMinutes):
+    d = dispatchTrains(minute)
+    if (d):
+        pp.pprint(trains)
+        print("-------------")
 
 
 exit()
+
+
+
 
 
 
@@ -160,6 +197,8 @@ def dispatchTrains(dispatch):
                         transit[d].append(t)
                         trains[d][t]["dispatched"] = True
     
+
+
 
 transit = {"n":[],"s":[]}
 
