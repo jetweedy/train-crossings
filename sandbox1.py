@@ -157,6 +157,7 @@ print(trains["s"]["s2"]["position"], determineTrainSiding(trains["s"]["s2"]))
 
 
 def dispatchTrains(minute):
+    print("dispatchTrains(", minute, ")")
     if (len(dispatches)>0):
         d = dispatches[0]
         if (minute >= d):
