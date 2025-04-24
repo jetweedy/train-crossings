@@ -156,18 +156,33 @@ print(trains["s"]["s2"]["position"], determineTrainSiding(trains["s"]["s2"]))
 
 
 
+
 def dispatchTrains(minute):
-    print("dispatchTrains(", minute, ")")
+    print("---------- dispatchTrains(", minute, ") --------------")
     if (len(dispatches)>0):
         d = dispatches[0]
         if (minute >= d):
             for direction in trains:
                 for t, train in trains[direction].items():
-                    print(minute, d, train["dispatch"])
-                    if (train["dispatch"] <= minute):
+                    print("minute:", minute, " | d:", d, " | train[dispatch]:", train["dispatch"])
+                    if (train["dispatch"]<=minute and not train["dispatched"]):
+
+                        ## Check for conflicting (oncoming) trains in the segment they'd move to:
+                        if (train["direction"]=="n"):
+                            sk = list(segments.keys())[0]
+                            if (segments[sk]["trains"]["s"]):
+                                return False
+                        else:
+                            sk = list(segments.keys())[len(segments.keys())-1]
+                            print("sk:", sk)
+                            if (segments[sk]["trains"]["n"]):
+                                return False
+
+                        print("Dispatch", trains[direction][t])
                         trains[direction][t]["dispatched"] = True
+
             del dispatches[0]
-            return d
+            return True
     return False
 
 
@@ -176,7 +191,6 @@ for minute in range(totalMinutes):
     d = dispatchTrains(minute)
     if (d):
         pp.pprint(trains)
-        print("-------------")
 
 
 exit()
