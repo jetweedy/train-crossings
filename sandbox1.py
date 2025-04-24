@@ -68,9 +68,14 @@ markers = {
 }
 trackLength = 200
 sidings = [25,50,75,100,125,150,175]
+segments = {}
+for siding in sidings:
+    s = str(siding)
+    segments["ns"+s] = []
+
 mph = 30
 totalMinutes = 48*60
-nTrainsPerDirection = 10
+nTrainsPerDirection = 1
 dispatchInterval = totalMinutes/nTrainsPerDirection
 minutesPerMile = 60/mph
 milesPerMinute = mph/60
@@ -85,7 +90,7 @@ while(d<totalMinutes):
 
 
 
-trains = {"n":{}, "s":{}}
+trains = {"s":{}, "n":{}}
 for i in range(0,nTrainsPerDirection):
     trains["s"]["s"+str(i+1)] = {
         "direction":"s",
@@ -107,36 +112,80 @@ for i in range(0,nTrainsPerDirection):
 #print()
 
 
-transit = {"n":[],"s":[]}
 
 
 
-## MAIN LOOP:
+trains["n"]["n1"]["position"] = 67
+trains["s"]["s1"]["position"] = 165
+def determineTrainSegment(train):
+    if (train["direction"]=="n"):
+        for siding in sidings:
+            if (train["position"]<siding):
+                return "n"+str(siding)
+        return False
+    if (train["direction"]=="s"):
+        for siding in sidings:
+            if (train["position"]<siding):
+                return "s"+str(siding)
+        return False
+
+print(trains["n"]["n1"]["position"], determineTrainSegment(trains["n"]["n1"]))
+print(trains["s"]["s1"]["position"], determineTrainSegment(trains["s"]["s1"]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+exit()
+
+
 
 def dispatchTrains(dispatch):
     for d,dTrain in trains.items():
         for t,train in dTrain.items():
-            ## Add the train to the transit if not already there:
-            ## We'll toggle it to False when it finishes up
-            if t not in transit[train["direction"]]:
-                if (train["dispatch"]==dispatch and not train["dispatched"]):
-                    transit[train["direction"]].append(t)
-                    trains[d][t]["dispatched"] = True
+            ## Only allow a train if there are fewer than len(sidings)-1 on the track so far:
+            if ( len(transit[d]) < len(sidings)-1 ):
+                ## Add the train to the transit if not already there:
+                ## We'll toggle it to False when it finishes up
+                if t not in transit[d]:
+                    if (train["dispatch"]==dispatch and not train["dispatched"]):
+                        transit[d].append(t)
+                        trains[d][t]["dispatched"] = True
     
+
+transit = {"n":[],"s":[]}
+
+## MAIN LOOP:
 
 for dispatch in dispatches:
     print("dispatch:", dispatch)
-
-    if ( len(transit["n"])>0 and len(transit["s"])>0 ):
-        train1 = trains["n"][transit["n"][0]]
-        train2 = trains["s"][transit["s"][0]]
-        mp = find_meeting_point(train1, train2, sidings)
-        print("NEXT MEETING:")
-        pp.pprint(mp)
-    
     dispatchTrains(dispatch)
     print("Transits:")
     pp.pprint(transit)
+    print("Upcoming Collisions:")
+    if ( len(transit["n"])>0 and len(transit["s"])>0 ):
+        cc = 0
+        for nTrain in transit["n"]:
+            for sTrain in transit["s"]:
+                cc += 1
+                print(cc)
+                mp = find_meeting_point(trains["n"][nTrain], trains["s"][sTrain], sidings)
+                pp.pprint(mp)
+                nTrainDist = abs(trains["n"][nTrain]["position"] - mp["miles"])
+                print("nTrainDist:", nTrainDist)
+                sTrainDist = abs(trains["s"][sTrain]["position"] - mp["miles"])
+                print("nTrainDist:", nTrainDist)
+
+
+    print("--------------------------------------")
 
 
 """
